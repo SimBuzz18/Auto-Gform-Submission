@@ -11,7 +11,7 @@ class AutoFormApp(ctk.CTk):
         super().__init__()
         
         # Window Config
-        self.title("AutoForm Automation V1.0")
+        self.title("AutoGForm Automation")
         self.geometry("900x500")
         ctk.set_appearance_mode("System")
         ctk.set_default_color_theme("blue")
@@ -42,7 +42,7 @@ class AutoFormApp(ctk.CTk):
         self._init_right_panel()
 
     def _init_left_panel(self):
-        lbl_title = ctk.CTkLabel(self.frame_left, text="Aplikasi Otomatisasi v2.0", font=ctk.CTkFont(size=20, weight="bold"))
+        lbl_title = ctk.CTkLabel(self.frame_left, text="AutoGForm Automation", font=ctk.CTkFont(size=20, weight="bold"))
         lbl_title.grid(row=0, column=0, padx=20, pady=(20, 10))
 
         # 1. Link Input
