@@ -79,11 +79,6 @@ class AutoFormLogic:
                                 # Match Column Logic
                                 if normalized_q_text in col_map:
                                     target_col = col_map[normalized_q_text]
-                                else:
-                                    for norm_col, real_col in col_map.items():
-                                        if norm_col in normalized_q_text or normalized_q_text in norm_col:
-                                            target_col = real_col
-                                            break
                                 
                                 if not target_col:
                                     # CRITICAL: Pertanyaan di Form tidak ada di Excel -> STOP
