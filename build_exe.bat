@@ -13,7 +13,7 @@ echo --noconsole: Menyembunyikan terminal console saat dijalankan (agar terlihat
 echo --collect-all customtkinter: Mengambil semua aset CustomTkinter
 echo --icon: Menambahkan icon aplikasi
 
-pyinstaller --noconsole --onefile --collect-all customtkinter --icon="icon.png" --name "AutoFormPro" ui.py
+pyinstaller --noconsole --onefile --collect-all customtkinter --icon="icon.png" --name "AutoForm" ui.py
 
 echo.
 echo Build Selesai! File EXE ada di folder 'dist'.
