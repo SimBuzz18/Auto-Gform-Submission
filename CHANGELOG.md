@@ -2,6 +2,11 @@
 
 Semua perubahan signifikan pada proyek **AutoForm Pro** akan dicatat di file ini.
 
+## [1.2.6] - 2026-02-25
+
+### Fixed
+- **Audit Panel KeyError**: Memperbaiki `KeyError: 'Baris'` di `show_audit_panel`. Sekarang data audit dipastikan memiliki kunci standar (`Baris`, `Nama`, `Alasan`) meskipun datanya berasal dari kolom Excel yang berbeda-beda.
+
 ## [1.2.5] - 2026-02-25
 
 ### Fixed

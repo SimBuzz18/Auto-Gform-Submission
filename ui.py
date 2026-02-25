@@ -300,10 +300,13 @@ class AutoFormApp(ctk.CTk):
                             idx = int(row_idx) - 1
                             if self.current_df is not None and 0 <= idx < len(self.current_df):
                                 row_dict = self.current_df.iloc[idx].to_dict()
-                                row_dict["ALASAN_FAIL"] = alasan
+                                # Pastikan kunci standar ada untuk UI (biar tidak KeyError)
+                                row_dict["Baris"] = row_idx
+                                row_dict["Nama"] = nama
+                                row_dict["Alasan"] = alasan
                                 self.error_data.append(row_dict)
                         except:
-                            self.error_data.append({"Baris": row_idx, "Nama": nama, "ALASAN_FAIL": alasan})
+                            self.error_data.append({"Baris": row_idx, "Nama": nama, "Alasan": alasan})
                         
                         # Teruskan ke UI untuk update terminal error (jika panel sudah dibuka)
                         ui_msg = f"[ERROR_UI]|{row_idx}|{nama}|{alasan}"
@@ -436,7 +439,11 @@ class AutoFormApp(ctk.CTk):
         # 3. Isi Data
         content = "Baris | Nama | Alasan\n" + "-"*50 + "\n"
         for err in self.error_data:
-            content += f"{str(err['Baris']).ljust(6)} | {err['Nama'].ljust(20)} | {err['Alasan']}\n"
+            # Gunakan .get() sebagai pengaman extra
+            b = str(err.get('Baris', '-'))
+            n = str(err.get('Nama', 'Unknown'))
+            a = str(err.get('Alasan', 'Error'))
+            content += f"{b.ljust(6)} | {n.ljust(20)} | {a}\n"
         
         self.error_terminal.insert("0.0", content)
         self.error_terminal.configure(state="disabled")
