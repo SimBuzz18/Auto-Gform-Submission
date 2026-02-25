@@ -19,7 +19,7 @@ class AutoFormApp(ctk.CTk):
         
         # Window Config
         self.title("AutoGForm Automation")
-        self.geometry("1920x1080")
+        self.geometry("1200x800")
         # Gunakan .after() untuk mengeksekusi 'zoomed' setelah UI selesai dirender
         self.after(0, lambda: self.state('zoomed'))
         ctk.set_appearance_mode("System")
@@ -414,7 +414,10 @@ class AutoFormApp(ctk.CTk):
                     folder_input = os.path.dirname(file)
                     path_export = os.path.join(folder_input, "Responden Gagal.xlsx")
                     
-                    df_err = pd.DataFrame(self.error_data)
+                    # Sort data by Baris before export
+                    sorted_export = sorted(self.error_data, key=lambda x: int(x.get('Baris', 0)) if str(x.get('Baris', '')).isdigit() else 999999)
+                    
+                    df_err = pd.DataFrame(sorted_export)
                     df_err.to_excel(path_export, index=False)
                     self.log_gui(f"\n[v] Berhasil mengekspor {len(self.error_data)} data gagal ke:")
                     self.log_gui(f"    {path_export}")
@@ -438,7 +441,11 @@ class AutoFormApp(ctk.CTk):
         
         # 3. Isi Data
         content = "Baris | Nama | Alasan\n" + "-"*50 + "\n"
-        for err in self.error_data:
+        
+        # Sort data by Baris (numeric) before display
+        sorted_errors = sorted(self.error_data, key=lambda x: int(x.get('Baris', 0)) if str(x.get('Baris', '')).isdigit() else 999999)
+        
+        for err in sorted_errors:
             # Gunakan .get() sebagai pengaman extra
             b = str(err.get('Baris', '-'))
             n = str(err.get('Nama', 'Unknown'))

@@ -2,6 +2,11 @@
 
 Semua perubahan signifikan pada proyek **AutoForm Pro** akan dicatat di file ini.
 
+## [1.2.7] - 2026-02-25
+
+### Added
+- **Audit Data Sorting**: Data pada panel audit dan file rekap `Responden Gagal.xlsx` kini otomatis diurutkan berdasarkan nomor baris (terkecil ke terbesar) untuk memudahkan pengecekan manual.
+
 ## [1.2.6] - 2026-02-25
 
 ### Fixed
