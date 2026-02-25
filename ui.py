@@ -276,7 +276,20 @@ class AutoFormApp(ctk.CTk):
         if self.is_running:
             self.stop_event.set()
             self.log_gui("\n[!!!] PERMINTAAN STOP DITERIMA. MENGHENTIKAN SEMUA WORKER...")
+            
+            # Paksa kill semua proses worker
+            for p in self.processes:
+                if p.is_alive():
+                    try:
+                        p.terminate()
+                        p.join(timeout=0.1)
+                    except:
+                        pass
+            
+            self.log_gui("[v] Semua worker telah dihentikan paksa.")
             self.btn_stop.configure(state="disabled")
+            self.is_running = False
+            self.after(0, lambda: self.btn_start.configure(state="normal"))
 
     def log_listener(self):
         """Poll the multiprocessing queue and update the UI/Data."""
@@ -398,12 +411,13 @@ class AutoFormApp(ctk.CTk):
             # Tambahkan jeda kecil lagi untuk memastikan semua self.after() di log_gui tuntas diproses oleh mainloop
             time.sleep(0.5)
 
-            self.log_gui("\n=== SEMUA PROSES SELESAI ===")
+            # Gunakan self.after untuk semua call UI dari thread ini (Menghindari RuntimeError)
+            self.after(0, lambda: self.log_gui("\n=== SEMUA PROSES SELESAI ==="))
             
-            # Menampilkan waktu dengan spasi agar tanda ':' sejajar vertikal
-            self.log_gui(f"Mulai   : {self.start_time_str}")
-            self.log_gui(f"Selesai : {end_time_str}")
-            self.log_gui(f"Durasi  : {durasi_str}")
+            # Menampilkan waktu
+            self.after(0, lambda: self.log_gui(f"Mulai   : {self.start_time_str}"))
+            self.after(0, lambda: self.log_gui(f"Selesai : {end_time_str}"))
+            self.after(0, lambda: self.log_gui(f"Durasi  : {durasi_str}"))
             
             # --- Tampilkan Panel Audit Jika Ada Error ---
             if self.error_data:
@@ -420,12 +434,12 @@ class AutoFormApp(ctk.CTk):
                     
                     df_err = pd.DataFrame(sorted_export)
                     df_err.to_excel(path_export, index=False)
-                    self.log_gui(f"\n[v] Berhasil mengekspor {len(self.error_data)} data gagal ke:")
-                    self.log_gui(f"    {path_export}")
+                    self.after(0, lambda: self.log_gui(f"\n[v] Berhasil mengekspor {len(self.error_data)} data gagal ke:"))
+                    self.after(0, lambda: self.log_gui(f"    {path_export}"))
                 except Exception as ex_err:
-                    self.log_gui(f"\n[!] Gagal mengekspor file audit: {ex_err}")
+                    self.after(0, lambda e=ex_err: self.log_gui(f"\n[!] Gagal mengekspor file audit: {e}"))
             else:
-                self.log_gui("\n[i] Tidak ada responden gagal. Skip ekspor file audit.")
+                self.after(0, lambda: self.log_gui("\n[i] Tidak ada responden gagal. Skip ekspor file audit."))
             
             self.after(0, lambda: self.btn_start.configure(state="normal"))
             self.after(0, lambda: self.btn_stop.configure(state="disabled"))

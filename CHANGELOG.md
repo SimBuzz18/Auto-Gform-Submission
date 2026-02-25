@@ -1,3 +1,15 @@
+# Changelog
+
+Semua perubahan signifikan pada proyek **AutoForm Pro** akan dicatat di file ini.
+
+## [1.2.9] - 2026-02-25
+
+### Added
+- **Force Stop Feature**: Menekan tombol "STOP" sekarang akan langsung mematikan (`terminate`) seluruh proses worker secara instan.
+
+### Fixed
+- **Threading RuntimeError**: Memperbaiki `RuntimeError: main thread is not in main loop` yang muncul saat Orchestrator mencoba memperbarui UI secara langsung tanpa melalui antrian `self.after()`.
+
 ## [1.2.8] - 2026-02-25
 
 ### Fixed
