@@ -11,6 +11,11 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException,
 from webdriver_manager.chrome import ChromeDriverManager
 
 
+class SkipRespondentException(Exception):
+    """Exception raised to skip current respondent and move to next."""
+    pass
+
+
 def worker_launcher(df_chunk, link_gform, queue_log, stop_event, worker_id, headless=True):
     """Entry point for multiprocessing worker."""
     form_logic = logic(callback_log=queue_log, stop_event=stop_event, worker_id=worker_id)
@@ -83,11 +88,12 @@ class logic:
                     if self._is_stopped(): break
                     
                     if attempt == 1:
-                        self._log(f"Mengisi Responden ke-{index + 1}...")
+                        self._log(f"Resp. ke-{index + 1}...")
                     else:
-                        self._log(f"   [!] Retrying Responden ke-{index + 1} (Percobaan {attempt}/{MAX_RETRIES})...")
+                        self._log(f"   [!] Retrying Resp. ke-{index + 1} (Percobaan {attempt}/{MAX_RETRIES})...")
 
                     try:
+                        nama_resp = row.get('Nama Lengkap', row.get('Nama', 'Unknown'))
                         driver.get(link_gform)
                         wait = WebDriverWait(driver, 10) 
                         
@@ -122,8 +128,7 @@ class logic:
                                         target_col = col_map[normalized_q_text]
                                     
                                     if not target_col:
-                                        self._log(f"[CRITICAL] Pertanyaan '{q_text}' TIDAK DITEMUKAN di Excel!")
-                                        return 
+                                        raise SkipRespondentException(f"Pertanyaan '{q_text}' tidak ditemukan di Excel")
                                         
                                     answer = row[target_col]
                                     if pd.isna(answer) or str(answer).lower() == 'nan' or str(answer).strip() == '':
@@ -149,8 +154,7 @@ class logic:
                                                 break
                                         
                                         if not found_radio:
-                                            self._log(f"[CRITICAL] Pilihan '{answer}' tidak ada untuk pertanyaan '{q_text}'")
-                                            return
+                                            raise SkipRespondentException(f"Pilihan '{answer}' tidak ada untuk pertanyaan '{q_text}'")
                                         continue
 
                                     # B. Checkbox
@@ -174,8 +178,7 @@ class logic:
                                                 found_count += 1
                                         
                                         if found_count < len(answers_list):
-                                            self._log(f"[CRITICAL] Salah satu opsi checkbox '{answer}' tidak ditemukan di Form!")
-                                            return
+                                            raise SkipRespondentException(f"Opsi checkbox '{answer}' tidak lengkap di Form")
                                         continue
 
                                     # C. Text Input
@@ -202,7 +205,7 @@ class logic:
                                     driver.execute_script("arguments[0].scrollIntoView();", nav_btn)
                                     time.sleep(0.3)
                                     driver.execute_script("arguments[0].click();", nav_btn)
-                                    self._log(f"   [v] Responden {index + 1} TERKIRIM.")
+                                    self._log(f"[v] Resp. {index + 1} TERKIRIM.")
                                     time.sleep(2)
                                     sukses_kirim = True
                                     break
@@ -215,12 +218,19 @@ class logic:
                                     continue
                                     
                             except TimeoutException:
-                                self._log("   [!] Tidak ada tombol Navigasi (Next/Submit) yang terdeteksi.")
-                                break
+                                raise SkipRespondentException("Tidak ada tombol Navigasi (Next/Submit)")
 
                         if sukses_kirim:
                             break # Keluar dari loop RETRY, lanjut ke baris Excel berikutnya
                             
+                    except SkipRespondentException as e:
+                        # Skip langsung responden ini tanpa retry
+                        alasan = str(e)
+                        self._log(f"   [!!!] SKIP Resp. {index + 1}: {alasan}")
+                        self._log(f"[ERROR_DATA]|{index + 1}|{nama_resp}|{alasan}")
+                        sukses_kirim = False # Pastikan tidak dianggap sukses
+                        break # Keluar dari loop RETRY, lanjut ke responden berikutnya
+                        
                     except Exception as e:
                         # Tangkap error selenium (timeout, putus koneksi, dsb)
                         self._log(f"   [x] Error pada percobaan {attempt}: Terjadi kesalahan jaringan/halaman.")
@@ -230,7 +240,7 @@ class logic:
                     # else pada For-Loop akan dieksekusi jika loop berjalan sampai habis tanpa terkena 'break'
                     # (artinya semua percobaan gagal)
                     if not self._is_stopped():
-                        self._log(f"   [CRITICAL] Gagal mengirim Responden ke-{index + 1} setelah {MAX_RETRIES} kali percobaan. Melewati data ini.")
+                        self._log(f"   [CRITICAL] Gagal mengirim Resp. ke-{index + 1} setelah {MAX_RETRIES} kali percobaan. Melewati data ini.")
                         # Kirim data error spesifik untuk rekap di UI
                         nama_resp = row.get('Nama Lengkap', row.get('Nama', 'Unknown'))
                         # Format: [ERROR_DATA]|Baris|Nama|Alasan

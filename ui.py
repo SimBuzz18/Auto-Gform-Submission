@@ -115,14 +115,9 @@ class AutoFormApp(ctk.CTk):
         self.main_terminal.configure(state="disabled") 
         self.worker_terminals = {} # Tempat menyimpan kotak terminal per worker
         
-        # 3. Terminal Khusus Ringkasan Gagal (Di bawah)
-        lbl_err = ctk.CTkLabel(self.frame_right, text="Ringkasan Responden Gagal (Tabel Audit)", font=ctk.CTkFont(size=12, weight="bold"), text_color="#ff5555")
-        lbl_err.grid(row=4, column=0, columnspan=10, sticky="w", padx=10, pady=(20, 0))
-        
-        self.error_terminal = ctk.CTkTextbox(self.frame_right, height=120, font=("Consolas", 10), border_width=1, border_color="#ff5555")
-        self.error_terminal.grid(row=5, column=0, columnspan=10, sticky="ew", padx=10, pady=(0, 10))
-        self.error_terminal.insert("0.0", "Baris | Nama | Alasan\n" + "-"*50 + "\n")
-        self.error_terminal.configure(state="disabled")
+        # NOTE: Panel Audit (Ringkasan Gagal) sekarang dibuat dinamis di show_audit_panel()
+        # agar hanya muncul setelah proses selesai dan jika ada error.
+        self.error_terminal = None 
     
     def setup_worker_terminals(self, worker_ranges):
         """Membuat kolom textboxes secara dinamis berdasarkan jumlah worker dan rentang data."""
@@ -149,7 +144,9 @@ class AutoFormApp(ctk.CTk):
         self.main_terminal.insert("0.0", old_logs.strip() + "\n")
         self.main_terminal.see("end")
         self.main_terminal.configure(state="disabled")
+        
 
+        self.terminal_font_size = 6
         # 2. Buat Terminal Worker (Berjejer ke Samping)
         self.worker_terminals = {}
         for i, (start_n, end_n) in enumerate(worker_ranges):
@@ -162,7 +159,7 @@ class AutoFormApp(ctk.CTk):
             lbl_worker = ctk.CTkLabel(self.frame_right, text=header_text, font=ctk.CTkFont(size=12, weight="bold"))
             lbl_worker.grid(row=2, column=i, pady=(0,5))
             
-            txt = ctk.CTkTextbox(self.frame_right, font=("Consolas", 10), border_width=1, border_color="#555")
+            txt = ctk.CTkTextbox(self.frame_right, font=("Consolas", self.terminal_font_size), border_width=1, border_color="#555")
             txt.grid(row=3, column=i, sticky="nswe", padx=5, pady=(0, 10))
             txt.configure(state="disabled")
             self.worker_terminals[worker_id] = txt
@@ -206,11 +203,12 @@ class AutoFormApp(ctk.CTk):
                 # Simpan ke list untuk export excel
                 self.error_data.append({"Baris": row_idx, "Nama": nama, "Alasan": alasan})
                 
-                # Masukkan ke terminal error khusus
-                self.error_terminal.configure(state="normal")
-                self.error_terminal.insert("end", f"{row_idx.ljust(6)} | {nama.ljust(20)} | {alasan}\n")
-                self.error_terminal.see("end")
-                self.error_terminal.configure(state="disabled")
+                # Update terminal error jika sudah dipicu tampilannya
+                if self.error_terminal:
+                    self.error_terminal.configure(state="normal")
+                    self.error_terminal.insert("end", f"{row_idx.ljust(6)} | {nama.ljust(20)} | {alasan}\n")
+                    self.error_terminal.see("end")
+                    self.error_terminal.configure(state="disabled")
                 return # Tidak perlu lanjut ke terminal worker
 
         # B. Cek apakah teks mengandung identitas worker (contoh: "[Worker-1] Mengisi data...")
@@ -247,6 +245,10 @@ class AutoFormApp(ctk.CTk):
         except:
             self.worker_var.set(str(self.default_workers))
 
+        # Reset State & UI
+        self.error_terminal = None # Reset widget reference
+        self.error_data = [] 
+
         link = self.link_var.get().strip()
         file = self.file_path_var.get().strip()
         
@@ -264,12 +266,6 @@ class AutoFormApp(ctk.CTk):
         self.btn_stop.configure(state="normal")
         
         self.log_gui("\n=== MEMULAI PROSES PARAREL ===")
-        self.error_data = [] # Reset data error sebelum mulai
-        
-        # Reset terminal error
-        self.error_terminal.configure(state="normal")
-        self.error_terminal.delete("3.0", "end") # Sisakan header
-        self.error_terminal.configure(state="disabled")
         
         # Start log listener
         thread_listener = threading.Thread(target=self.log_listener, daemon=True)
@@ -370,6 +366,10 @@ class AutoFormApp(ctk.CTk):
             self.log_gui(f"Selesai : {end_time_str}")
             self.log_gui(f"Durasi  : {durasi_str}")
             
+            # --- Tampilkan Panel Audit Jika Ada Error ---
+            if self.error_data:
+                self.after(0, self.show_audit_panel)
+            
             # 6. Ekspor Data Gagal ke Excel (Jika ada)
             if self.error_data:
                 try:
@@ -387,6 +387,25 @@ class AutoFormApp(ctk.CTk):
             
             self.after(0, lambda: self.btn_start.configure(state="normal"))
             self.after(0, lambda: self.btn_stop.configure(state="disabled"))
+
+    def show_audit_panel(self):
+        """Membangun panel audit di bagian bawah secara dinamis."""
+        # 1. Label
+        lbl_err = ctk.CTkLabel(self.frame_right, text="Ringkasan Responden Gagal (Tabel Audit)", font=ctk.CTkFont(size=12, weight="bold"), text_color="#ff5555")
+        lbl_err.grid(row=4, column=0, columnspan=10, sticky="w", padx=10, pady=(20, 0))
+        
+        # 2. Textbox
+        self.error_terminal = ctk.CTkTextbox(self.frame_right, height=120, font=("Consolas", 10), border_width=1, border_color="#ff5555")
+        self.error_terminal.grid(row=5, column=0, columnspan=10, sticky="ew", padx=10, pady=(0, 10))
+        
+        # 3. Isi Data
+        content = "Baris | Nama | Alasan\n" + "-"*50 + "\n"
+        for err in self.error_data:
+            content += f"{str(err['Baris']).ljust(6)} | {err['Nama'].ljust(20)} | {err['Alasan']}\n"
+        
+        self.error_terminal.insert("0.0", content)
+        self.error_terminal.configure(state="disabled")
+        self.error_terminal.see("end")
 
 
 if __name__ == "__main__":

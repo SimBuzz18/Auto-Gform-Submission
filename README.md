@@ -10,8 +10,8 @@ Aplikasi otomatisasi pengisian Google Form berbasis Excel menggunakan Python, Se
 *   **Pencocokan Cerdas (Smart Matching)**: Judul kolom di Excel tidak harus persis 100% sama dengan pertanyaan di Google Form.
 *   **Validasi Keamanan & Input**:
     *   **Worker Validator**: Mencegah input jumlah worker yang melebihi kapasitas core hardware.
-    *   **Cek Pertanyaan & Jawaban**: Sistem berhenti jika ada ketidaksinkronan data untuk menjaga validitas.
-*   **Audit Fail-Safe**: Mengumpulkan data responden yang gagal secara otomatis dan mengekspornya ke file Excel terpisah.
+    *   **Respondent Skipping**: Sistem lebih tangguh; jika data tidak cocok (mismatch), worker melompati responden tersebut dan lanjut ke data berikutnya (tidak berhenti total).
+*   **Audit Fail-Safe (Conditional)**: Mengumpulkan data responden yang gagal secara otomatis dan menampilkannya hanya setelah seluruh proses selesai jika terdapat error. Juga mengekspor data ke file Excel terpisah.
 *   **Tombol STOP Global**: Menghentikan seluruh worker dan menutup browser seketika jika terjadi kesalahan.
 
 ## Persyaratan (Requirements)

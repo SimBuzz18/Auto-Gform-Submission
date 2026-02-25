@@ -2,6 +2,15 @@
 
 Semua perubahan signifikan pada proyek **AutoForm Pro** akan dicatat di file ini.
 
+## [1.2.0] - 2026-02-25
+
+### Added
+- **Conditional Audit Panel**: Panel audit (Ringkasan Gagal) hanya muncul setelah seluruh proses selesai dan jika terdapat data error.
+- **Respondent Skipping Logic**: Worker sekarang tidak terhenti jika data tidak cocok (missing question/option); responden dilewati, dilaporkan ke audit, dan proses lanjut ke data berikutnya.
+
+### Fixed
+- **UI Layout Handling**: Reset state UI setiap kali tombol START ditekan untuk mencegah tumpang tindih layout terminal.
+
 ## [1.1.0] - 2026-02-25
 
 ### Added
