@@ -193,31 +193,19 @@ class AutoFormApp(ctk.CTk):
 
     def log_gui(self, message):
         """Append text to the GUI terminal in a thread-safe way."""
-        # A. Cek apakah ini data error untuk tabel audit: [ERROR_DATA]|Baris|Nama|Alasan
-        if message.startswith("[ERROR_DATA]|"):
+        # Update terminal error jika sudah dipicu tampilannya
+        # message format: [ERROR_UI]|Baris|Nama|Alasan
+        if message.startswith("[ERROR_UI]|"):
             parts = message.split("|")
-            if len(parts) >= 4:
-                row_idx = parts[1]
-                nama = parts[2]
-                alasan = parts[3]
-                
-                # Simpan ke list untuk export excel (Ambil baris utuh dari DataFrame asli)
-                try:
-                    idx = int(row_idx) - 1
-                    if self.current_df is not None and 0 <= idx < len(self.current_df):
-                        row_dict = self.current_df.iloc[idx].to_dict()
-                        row_dict["ALASAN_FAIL"] = alasan # Tambahkan kolom alasan
-                        self.error_data.append(row_dict)
-                except Exception as ex:
-                    self.error_data.append({"Baris": row_idx, "Nama": nama, "ALASAN_FAIL": alasan})
-                
-                # Update terminal error jika sudah dipicu tampilannya
-                if self.error_terminal:
-                    self.error_terminal.configure(state="normal")
-                    self.error_terminal.insert("end", f"{row_idx.ljust(6)} | {nama.ljust(20)} | {alasan}\n")
-                    self.error_terminal.see("end")
-                    self.error_terminal.configure(state="disabled")
-                return # Tidak perlu lanjut ke terminal worker
+            if len(parts) >= 4 and self.error_terminal:
+                row_idx, nama, alasan = parts[1], parts[2], parts[3]
+                self.error_terminal.configure(state="normal")
+                self.error_terminal.insert("end", f"{row_idx.ljust(6)} | {nama.ljust(20)} | {alasan}\n")
+                self.error_terminal.see("end")
+                self.error_terminal.configure(state="disabled")
+            return
+
+        # B. Cek apakah teks mengandung identitas worker
 
         # B. Cek apakah teks mengandung identitas worker (contoh: "[Worker-1] Mengisi data...")
         match = re.match(r"^\[Worker-(\d+)\]\s*(.*)", message)
@@ -291,11 +279,39 @@ class AutoFormApp(ctk.CTk):
             self.btn_stop.configure(state="disabled")
 
     def log_listener(self):
-        """Poll the multiprocessing queue and update the UI."""
+        """Poll the multiprocessing queue and update the UI/Data."""
         while True:
             try:
                 msg = self.queue_log.get(timeout=0.1)
-                self.after(0, lambda m=msg: self.log_gui(m))
+                
+                # SINKRONISASI DATA: Proses [ERROR_DATA] langsung di thread ini
+                # agar error_data terisi sebelum orchestrator selesai.
+                if "[ERROR_DATA]|" in msg:
+                    # Ambil bagian setelah worker prefix jika ada
+                    content = msg
+                    if " [ERROR_DATA]|" in msg:
+                        content = msg.split(" [ERROR_DATA]|")[1]
+                        content = "[ERROR_DATA]|" + content
+                    
+                    parts = content.split("|")
+                    if len(parts) >= 4:
+                        row_idx, nama, alasan = parts[1], parts[2], parts[3]
+                        try:
+                            idx = int(row_idx) - 1
+                            if self.current_df is not None and 0 <= idx < len(self.current_df):
+                                row_dict = self.current_df.iloc[idx].to_dict()
+                                row_dict["ALASAN_FAIL"] = alasan
+                                self.error_data.append(row_dict)
+                        except:
+                            self.error_data.append({"Baris": row_idx, "Nama": nama, "ALASAN_FAIL": alasan})
+                        
+                        # Teruskan ke UI untuk update terminal error (jika panel sudah dibuka)
+                        ui_msg = f"[ERROR_UI]|{row_idx}|{nama}|{alasan}"
+                        self.after(0, lambda: self.log_gui(ui_msg))
+                else:
+                    # Log biasa
+                    self.after(0, lambda m=msg: self.log_gui(m))
+                    
             except:
                 if not self.is_running and self.queue_log.empty(): 
                     break

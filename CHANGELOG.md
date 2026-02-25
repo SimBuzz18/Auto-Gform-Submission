@@ -2,6 +2,11 @@
 
 Semua perubahan signifikan pada proyek **AutoForm Pro** akan dicatat di file ini.
 
+## [1.2.5] - 2026-02-25
+
+### Fixed
+- **Synchronous Audit Collection**: Memperbaiki secara total masalah race condition pada panel audit. Sekarang data error diproses langsung di thread listener (bukan lagi menunggu callback UI), sehingga data dijamin sudah siap sebelum ringkasan audit ditampilkan atau diekspor.
+
 ## [1.2.4] - 2026-02-25
 
 ### Fixed
