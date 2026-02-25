@@ -276,8 +276,8 @@ class AutoFormApp(ctk.CTk):
         self.log_gui("\n=== MEMULAI PROSES PARAREL ===")
         
         # Start log listener
-        thread_listener = threading.Thread(target=self.log_listener, daemon=True)
-        thread_listener.start()
+        self.thread_listener = threading.Thread(target=self.log_listener, daemon=True)
+        self.thread_listener.start()
 
         # Run orchestrator in separate thread to keep UI alive
         t = threading.Thread(target=self.run_orchestrator, args=(file, link))
@@ -369,6 +369,14 @@ class AutoFormApp(ctk.CTk):
             durasi_str = f"{jam:02d}:{menit:02d}:{detik:02d}"
             
             self.is_running = False
+            
+            # Tunggu sebentar agar listener log menghabiskan sisa queue
+            if hasattr(self, 'thread_listener'):
+                self.thread_listener.join(timeout=2.0)
+            
+            # Tambahkan jeda kecil lagi untuk memastikan semua self.after() di log_gui tuntas diproses oleh mainloop
+            time.sleep(0.5)
+
             self.log_gui("\n=== SEMUA PROSES SELESAI ===")
             
             # Menampilkan waktu dengan spasi agar tanda ':' sejajar vertikal

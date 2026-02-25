@@ -2,6 +2,12 @@
 
 Semua perubahan signifikan pada proyek **AutoForm Pro** akan dicatat di file ini.
 
+## [1.2.3] - 2026-02-25
+
+### Fixed
+- **Audit Panel Race Condition**: Memperbaiki masalah di mana panel audit terkadang tidak muncul karena script selesai lebih cepat daripada proses penulisan log di UI. Sekarang Orchestrator menunggu listener log hingga benar-benar kosong sebelum menampilkan rekap.
+- **Full-Row Audit Robustness**: Memastikan data baris lengkap tercatat dengan benar meskipun terdapat variasi index.
+
 ## [1.2.2] - 2026-02-25
 
 ### Added
