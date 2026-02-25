@@ -2,6 +2,11 @@
 
 Semua perubahan signifikan pada proyek **AutoForm Pro** akan dicatat di file ini.
 
+## [1.2.4] - 2026-02-25
+
+### Fixed
+- **Missing Import**: Memperbaiki `NameError` di `ui.py` karena modul `time` belum di-import namun digunakan di fungsi `run_orchestrator`.
+
 ## [1.2.3] - 2026-02-25
 
 ### Fixed

@@ -2,6 +2,7 @@ import customtkinter as ctk
 import tkinter as tk
 from tkinter import filedialog
 import os
+import time
 import threading
 import multiprocessing
 import pandas as pd
