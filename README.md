@@ -8,10 +8,8 @@ Aplikasi otomatisasi pengisian Google Form berbasis Excel menggunakan Python, Se
 *   **Mode Headless**: Pilihan untuk menjalankan browser tanpa muncul di layar untuk menghemat sumber daya.
 *   **Antarmuka Modern (GUI)**: Menggunakan `customtkinter` dengan terminal log dinamis untuk tiap worker.
 *   **Pencocokan Cerdas (Smart Matching)**: Judul kolom di Excel tidak harus persis 100% sama dengan pertanyaan di Google Form.
-*   **Validasi Keamanan & Input**:
-    *   **Worker Validator**: Mencegah input jumlah worker yang melebihi kapasitas core hardware.
-    *   **Respondent Skipping**: Sistem lebih tangguh; jika data tidak cocok (mismatch), worker melompati responden tersebut dan lanjut ke data berikutnya (tidak berhenti total).
-*   **Audit Fail-Safe (Conditional)**: Mengumpulkan data responden yang gagal secara otomatis dan menampilkannya hanya setelah seluruh proses selesai jika terdapat error. Juga mengekspor data ke file Excel terpisah.
+*   **Audit Fail-Safe (Full-Row)**: Mengumpulkan data responden yang gagal secara otomatis dengan format baris lengkap sesuai file asli, memudahkan user untuk melakukan import ulang atau perbaikan manual.
+*   **Respondent Skipping & Network Retry**: Sistem cerdas yang membedakan antara data mismatch (langsung skip) dan error jaringan (retry up to 3x) untuk efisiensi maksimal.
 *   **Tombol STOP Global**: Menghentikan seluruh worker dan menutup browser seketika jika terjadi kesalahan.
 
 ## Persyaratan (Requirements)

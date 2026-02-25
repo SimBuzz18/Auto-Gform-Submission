@@ -2,6 +2,16 @@
 
 Semua perubahan signifikan pada proyek **AutoForm Pro** akan dicatat di file ini.
 
+## [1.2.2] - 2026-02-25
+
+### Added
+- **Full-Row Audit System**: File rekap `Responden Gagal.xlsx` kini berisi **seluruh kolom asli** dari file Excel yang diimport (copas baris lengkap) untuk memudahkan analisis manual.
+- **Enhanced Exception Propagation**: Error interaksi (seperti elemen tidak bisa diklik) sekarang otomatis memicu Skip, mencegah penekanan tombol 'Kirim' pada form yang belum terisi lengkap.
+- **Queue Draining Logic**: Listener log sekarang memastikan seluruh pesan dari worker diproses sebelum menampilkan panel audit.
+
+### Fixed
+- **Network Resilience Handling**: Mempertahankan mekanisme Retry untuk error jaringan/selenium, namun tetap mencatat data baris lengkap ke audit jika seluruh percobaan gagal.
+
 ## [1.2.1] - 2026-02-25
 
 ### Fixed

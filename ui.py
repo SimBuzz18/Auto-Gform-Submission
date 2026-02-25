@@ -200,8 +200,15 @@ class AutoFormApp(ctk.CTk):
                 nama = parts[2]
                 alasan = parts[3]
                 
-                # Simpan ke list untuk export excel
-                self.error_data.append({"Baris": row_idx, "Nama": nama, "Alasan": alasan})
+                # Simpan ke list untuk export excel (Ambil baris utuh dari DataFrame asli)
+                try:
+                    idx = int(row_idx) - 1
+                    if self.current_df is not None and 0 <= idx < len(self.current_df):
+                        row_dict = self.current_df.iloc[idx].to_dict()
+                        row_dict["ALASAN_FAIL"] = alasan # Tambahkan kolom alasan
+                        self.error_data.append(row_dict)
+                except Exception as ex:
+                    self.error_data.append({"Baris": row_idx, "Nama": nama, "ALASAN_FAIL": alasan})
                 
                 # Update terminal error jika sudah dipicu tampilannya
                 if self.error_terminal:
@@ -246,8 +253,9 @@ class AutoFormApp(ctk.CTk):
             self.worker_var.set(str(self.default_workers))
 
         # Reset State & UI
-        self.error_terminal = None # Reset widget reference
+        self.error_terminal = None 
         self.error_data = [] 
+        self.current_df = None # Tempat simpan data asli untuk lookup baris
 
         link = self.link_var.get().strip()
         file = self.file_path_var.get().strip()
@@ -288,12 +296,14 @@ class AutoFormApp(ctk.CTk):
                 msg = self.queue_log.get(timeout=0.1)
                 self.after(0, lambda m=msg: self.log_gui(m))
             except:
-                if not self.is_running: break
+                if not self.is_running and self.queue_log.empty(): 
+                    break
 
     def run_orchestrator(self, file, link):
         try:
             # 1. Read Excel
-            df = pd.read_excel(file)
+            self.current_df = pd.read_excel(file)
+            df = self.current_df
             n_total = len(df)
             
             # 2. Get User Config

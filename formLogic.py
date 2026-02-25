@@ -190,9 +190,10 @@ class logic:
                                         continue
                                         
                                 except SkipRespondentException:
-                                    raise # Re-raise to be caught by the outer respondent skip handler
+                                    raise # Re-raise to skip respondent
                                 except Exception as e:
-                                    self._log(f"Error question loop: {e}")
+                                    # Perlakukan error interaksi/selenium sebagai pemicu skip agar tidak menekan 'Kirim' setengah jadi
+                                    raise SkipRespondentException(f"Error Pertanyaan: {str(e)}")
 
                             # --- NAVIGASI ---
                             if self._is_stopped(): break
