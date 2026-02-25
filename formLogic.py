@@ -16,10 +16,10 @@ class SkipRespondentException(Exception):
     pass
 
 
-def worker_launcher(df_chunk, link_gform, queue_log, stop_event, worker_id, headless=True):
+def worker_launcher(df_chunk, link_gform, queue_log, stop_event, worker_id, headless=True, driver_path=None):
     """Entry point for multiprocessing worker."""
     form_logic = logic(callback_log=queue_log, stop_event=stop_event, worker_id=worker_id)
-    form_logic.run_process_chunk(df_chunk, link_gform, headless=headless)
+    form_logic.run_process_chunk(df_chunk, link_gform, headless=headless, driver_path=driver_path)
     
 
 class logic:
@@ -60,7 +60,7 @@ class logic:
         if not isinstance(text, str): return ""
         return re.sub(r'\s+', ' ', text.lower().strip())
 
-    def run_process_chunk(self, df_chunk, link_gform, headless=False):
+    def run_process_chunk(self, df_chunk, link_gform, headless=False, driver_path=None):
         """Runs the automation for a specific chunk of data."""
         driver = None
         try:
@@ -73,7 +73,11 @@ class logic:
             if headless:
                 options.add_argument("--headless")
             
-            driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+            # Gunakan path driver yang sudah di-install sebelumnya (menghindari race condition)
+            if driver_path:
+                driver = webdriver.Chrome(service=Service(driver_path), options=options)
+            else:
+                driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
             # ... (kode setup browser sebelumnya tetap sama) ...
 

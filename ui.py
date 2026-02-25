@@ -355,17 +355,18 @@ class AutoFormApp(ctk.CTk):
             self.after(0, self.setup_worker_terminals, worker_ranges)
             
             # Download & Cache driver 1 kali sebelum worker berjalan agar tidak tabrakan
-            ChromeDriverManager().install()
+            driver_path = ChromeDriverManager().install()
             
             # 4. Spawning Processes
             for i, chunk in enumerate(chunks):
                 if chunk.empty: continue
                 p = multiprocessing.Process(
                     target=worker_launcher, 
-                    args=(chunk, link, self.queue_log, self.stop_event, i+1, headless)
+                    args=(chunk, link, self.queue_log, self.stop_event, i+1, headless, driver_path)
                 )
                 p.start()
                 self.processes.append(p)
+                time.sleep(0.5) # Jeda 0.5 detik sesuai request
             
             # 5. Wait for all to finish
             for p in self.processes:

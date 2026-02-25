@@ -1,6 +1,7 @@
-# Changelog
+## [1.2.8] - 2026-02-25
 
-Semua perubahan signifikan pada proyek **AutoForm Pro** akan dicatat di file ini.
+### Fixed
+- **Worker Startup Stability**: Menangani masalah browser "stuck" dengan cara men-download driver Chrome satu kali di main process dan memberikan jeda 0.5 detik antar peluncuran browser.
 
 ## [1.2.7] - 2026-02-25
 
