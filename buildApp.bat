@@ -1,7 +1,7 @@
 @echo off
 setlocal
 echo ============================================================
-echo           AUTOFORM PRO BUILDER (v1.0.0)
+echo           AUTOFORM PRO BUILDER (v1.2.9)
 echo ============================================================
 
 echo [1/4] Detecting project location...
@@ -42,7 +42,7 @@ echo --icon: Use icon.png
 
 python -m PyInstaller --noconsole --onefile --clean --noconfirm ^
     --collect-all customtkinter ^
-    --icon="icon.png" ^
+    --icon="icon.ico" ^
     --name "AutoFormPro" ^
     ui.py
 
