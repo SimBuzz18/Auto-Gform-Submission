@@ -2,6 +2,11 @@
 
 Semua perubahan signifikan pada proyek **AutoForm Pro** akan dicatat di file ini.
 
+## [1.2.1] - 2026-02-25
+
+### Fixed
+- **Skip Respondent Exception Swallowing**: Memperbaiki bug di mana worker tetap melanjutkan pengisian (dan menekan Kirim) meskipun data tidak ditemukan/tidak cocok. Sekarang worker akan langsung berhenti memproses responden tersebut saat error ditemukan.
+
 ## [1.2.0] - 2026-02-25
 
 ### Added

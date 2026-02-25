@@ -189,6 +189,8 @@ class logic:
                                         inp.send_keys(str(answer))
                                         continue
                                         
+                                except SkipRespondentException:
+                                    raise # Re-raise to be caught by the outer respondent skip handler
                                 except Exception as e:
                                     self._log(f"Error question loop: {e}")
 
