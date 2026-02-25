@@ -4,3 +4,4 @@ webdriver-manager
 customtkinter
 openpyxl
 pyinstaller
+Pillow
