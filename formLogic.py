@@ -187,10 +187,26 @@ class logic:
 
                                     # C. Text Input
                                     text_inputs = q_elem.find_elements(By.XPATH, ".//input[@type='text'] | .//textarea")
-                                    if text_inputs:
-                                        inp = text_inputs[0]
-                                        inp.clear()
-                                        inp.send_keys(str(answer))
+                                    visible_inputs = [inp for inp in text_inputs if inp.is_displayed()]
+                                    
+                                    if visible_inputs:
+                                        inp = visible_inputs[0]
+                                        # Scroll elemen ke tengah agar tidak tertutup sticky header/footer
+                                        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", inp)
+                                        time.sleep(0.3)
+                                        
+                                        try:
+                                            inp.clear()
+                                        except Exception:
+                                            pass # Jika clear gagal (misal karena state), abaikan saja.
+                                            
+                                        try:
+                                            inp.send_keys(str(answer))
+                                        except Exception:
+                                            # Fallback eksekusi JS jika Element Not Interactable
+                                            driver.execute_script("arguments[0].value = arguments[1];", inp, str(answer))
+                                            driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", inp)
+                                            driver.execute_script("arguments[0].dispatchEvent(new Event('change', { bubbles: true }));", inp)
                                         continue
                                         
                                 except SkipRespondentException:
