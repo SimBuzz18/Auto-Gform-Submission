@@ -35,18 +35,18 @@ if exist dist rmdir /s /q dist
 if exist AutoForm.spec del /q AutoForm.spec
 
 echo [4/4] Generating Executable (PyInstaller)...
-echo --onefile: Single EXE output
+echo --onedir: Directory output (not single EXE)
 echo --noconsole: Hide terminal
 echo --collect-all customtkinter: Include CTK assets
 echo --icon: Use icon.png
 
-python -m PyInstaller --noconsole --onefile --clean --noconfirm ^
+python -m PyInstaller --noconsole --onedir --clean --noconfirm ^
     --collect-all customtkinter ^
     --icon="icon.ico" ^
     --name "AutoFormPro" ^
     ui.py
 
 echo ============================================================
-echo BUILD COMPLETE! Check dist/ folder for AutoFormPro.exe
+echo BUILD COMPLETE! Check dist/AutoFormPro/ folder for AutoFormPro.exe
 echo ============================================================
 pause
