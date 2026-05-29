@@ -36,6 +36,4 @@ if __name__ == "__main__":
     from app_gui import AutoFormApp
 
     app = AutoFormApp()
-    # Force top level
-    app.attributes('-topmost', True)
     app.mainloop()

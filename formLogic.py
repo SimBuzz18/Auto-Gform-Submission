@@ -118,6 +118,19 @@ class logic:
         if not isinstance(text, str): return ""
         return re.sub(r'\s+', ' ', text.lower().strip())
 
+    def _click_element(self, driver, element):
+        """Klik elemen menggunakan metode hibrida: native click dengan fallback ke JS click."""
+        try:
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
+            time.sleep(0.15)
+            element.click()
+        except Exception:
+            try:
+                driver.execute_script("arguments[0].click();", element)
+            except Exception as e:
+                self._log(f"   [!] Gagal mengklik elemen: {e}")
+                raise
+
     # =========================================================
     # TIMESTAMP SYNC — Google Sheets API
     # =========================================================
@@ -215,18 +228,16 @@ class logic:
             self._log("Membuka Browser Chrome...")
             options = webdriver.ChromeOptions()
             if headless:
-                # FIX: '--headless=new' wajib untuk Chrome v112+
-                # Flag stabilitas tambahan mencegah crash di environment multi-process
                 options.add_argument("--headless=new")
                 options.add_argument("--no-sandbox")
                 options.add_argument("--disable-dev-shm-usage")
                 options.add_argument("--disable-gpu")
+                options.add_argument("--window-size=1920,1080")
             
-            # Gunakan path driver yang sudah di-install sebelumnya (menghindari race condition)
             if driver_path:
                 driver = webdriver.Chrome(service=Service(driver_path), options=options)
             else:
-                driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+                driver = webdriver.Chrome(options=options)
 
             # Daftarkan PID browser ke GUI agar bisa di-kill secara eksplisit
             # saat tombol STOP ditekan (tanpa bergantung pada proses Python wrapper)
@@ -281,18 +292,41 @@ class logic:
                     try:
                         driver.get(link_gform)
                         
+                        # Menunggu hingga dokumen browser selesai terload penuh (100%)
+                        try:
+                            WebDriverWait(driver, 30).until(
+                                lambda d: d.execute_script("return document.readyState") == "complete"
+                            )
+                            self._log("   [v] Browser selesai dimuat (100% terload).")
+                        except TimeoutException:
+                            self._log("   [!] Timeout menunggu document.readyState == 'complete'")
+                        
                         halaman_ke = 1
                         sukses_kirim = False # Penanda apakah berhasil sampai tombol Kirim
                         
                         while True:
                             if self._is_stopped(): break
                             
-                            # Update: Use dynamic wait for questions instead of fixed sleep
+                            # Update: Use dynamic wait and stabilization loop for questions
                             try:
-                                wait.until(EC.presence_of_all_elements_located((By.XPATH, "//div[@role='listitem']")))
+                                wait.until(EC.presence_of_element_located((By.XPATH, "//div[@role='listitem']")))
                             except TimeoutException:
                                 self._log("   [!] Timeout menunggu pertanyaan muncul.")
                                 break
+
+                            # Loop Stabilisasi: Tunggu hingga jumlah elemen pertanyaan stabil (tidak berubah selama 1 detik)
+                            last_count = -1
+                            stable_time = time.time()
+                            timeout_stable = time.time() + 10
+                            while time.time() < timeout_stable:
+                                if self._is_stopped(): break
+                                current_count = len(driver.find_elements(By.XPATH, "//div[@role='listitem']"))
+                                if current_count != last_count:
+                                    last_count = current_count
+                                    stable_time = time.time()
+                                elif time.time() - stable_time >= 1.0:
+                                    break
+                                time.sleep(0.2)
 
                             questions = driver.find_elements(By.XPATH, "//div[@role='listitem']")
                             
@@ -360,8 +394,7 @@ class logic:
                                                 if (self.normalize_text(dv) == self.normalize_text(target_val) or
                                                         self.normalize_text(al) == self.normalize_text(target_val)):
                                                     if radio.get_attribute('aria-checked') == 'false':
-                                                        driver.execute_script("arguments[0].click();", radio)
-                                                        time.sleep(0.2)
+                                                        self._click_element(driver, radio)
                                                     found = True
                                                     break
                                             if not found:
@@ -413,8 +446,7 @@ class logic:
 
                                                     if row_norm in row_answers and col_norm in row_answers[row_norm]:
                                                         if cb.get_attribute('aria-checked') == 'false':
-                                                            driver.execute_script("arguments[0].click();", cb)
-                                                            time.sleep(0.2)
+                                                            self._click_element(driver, cb)
                                                 except StaleElementReferenceException:
                                                     continue
                                             continue
@@ -430,8 +462,7 @@ class logic:
                                             elif aria_label: val_norm = self.normalize_text(aria_label)
                                             if val_norm in answers_list:
                                                 if cb.get_attribute("aria-checked") == "false":
-                                                    driver.execute_script("arguments[0].click();", cb)
-                                                    time.sleep(0.3)
+                                                    self._click_element(driver, cb)
                                                 found_count += 1
                                         if found_count < len(answers_list):
                                             raise SkipRespondentException(f"Opsi checkbox '{answer}' tidak lengkap di Form")
@@ -452,8 +483,7 @@ class logic:
                                             elif aria_label and self.normalize_text(aria_label) == self.normalize_text(str(answer)): is_match = True
                                             if is_match:
                                                 if radio.get_attribute("aria-checked") == "false":
-                                                    driver.execute_script("arguments[0].click();", radio)
-                                                    time.sleep(0.3)
+                                                    self._click_element(driver, radio)
                                                 found_radio = True
                                                 break
                                         if not found_radio:
@@ -468,12 +498,8 @@ class logic:
                                     )
                                     if dropdown_trigger:
                                         trigger = dropdown_trigger[0]
-                                        driver.execute_script(
-                                            "arguments[0].scrollIntoView({block: 'center'});", trigger
-                                        )
-                                        time.sleep(0.2)
                                         try:
-                                            driver.execute_script("arguments[0].click();", trigger)
+                                            self._click_element(driver, trigger)
                                         except Exception:
                                             trigger.click()
 
@@ -499,8 +525,7 @@ class logic:
                                             try:
                                                 opt_text = opt.get_attribute("data-value") or opt.text
                                                 if self.normalize_text(opt_text) == self.normalize_text(str(answer)):
-                                                    driver.execute_script("arguments[0].click();", opt)
-                                                    time.sleep(0.3)
+                                                    self._click_element(driver, opt)
                                                     found_option = True
                                                     break
                                             except StaleElementReferenceException:
@@ -651,34 +676,80 @@ class logic:
                                         except Exception as _e:
                                             self._log(f"   [TS] Tidak dapat baca Sheets sebelum submit: {_e}")
 
-                                    driver.execute_script("arguments[0].click();", nav_btn)
-                                    self._log(f"[v] Resp. {index + 1} TERKIRIM.")
-                                    time.sleep(2)
-                                    sukses_kirim = True
+                                    self._click_element(driver, nav_btn)
+                                    
+                                    # Tunggu hingga halaman konfirmasi terload 100% dan respon tercatat
+                                    self._log("   Menunggu konfirmasi pengiriman dari Google Form...")
+                                    confirm_deadline = time.time() + 15
+                                    while time.time() < confirm_deadline:
+                                        if self._is_stopped(): break
+                                        
+                                        current_url = driver.current_url.lower()
+                                        page_source = driver.page_source.lower()
+                                        
+                                        # Indikator sukses: URL mengandung 'formresponse' ATAU ada teks konfirmasi (Indonesian/English)
+                                        has_confirm_text = any(txt in page_source for txt in [
+                                            "tanggapan anda telah direkam",
+                                            "your response has been recorded",
+                                            "kirim tanggapan lain",
+                                            "submit another response",
+                                            "edit tanggapan",
+                                            "edit your response"
+                                        ])
+                                        
+                                        # Cek apakah elemen pertanyaan masih ada
+                                        questions_left = driver.find_elements(By.XPATH, "//div[@role='listitem']")
+                                        
+                                        if ("formresponse" in current_url or has_confirm_text) and len(questions_left) == 0:
+                                            sukses_kirim = True
+                                            break
+                                            
+                                        time.sleep(0.5)
 
-                                    # Patch timestamp segera setelah submit berhasil
-                                    if _use_ts_sync and sheet is not None and row_before_submit is not None:
-                                        # Ambil nilai timestamp dari Excel, atau fallback ke waktu sekarang
-                                        ts_raw = None
-                                        if ts_col_key is not None:
-                                            ts_raw = row.get(col_map[ts_col_key])
+                                    if sukses_kirim:
+                                        self._log(f"[v] Resp. {index + 1} TERKIRIM.")
+                                        
+                                        # Patch timestamp segera setelah submit berhasil
+                                        if _use_ts_sync and sheet is not None and row_before_submit is not None:
+                                            # Ambil nilai timestamp dari Excel, atau fallback ke waktu sekarang
+                                            ts_raw = None
+                                            if ts_col_key is not None:
+                                                ts_raw = row.get(col_map[ts_col_key])
 
-                                        if ts_raw is not None and not pd.isna(ts_raw):
-                                            ts_str = self._format_timestamp(ts_raw)
-                                            self._log(f"   [TS] Menggunakan timestamp dari Excel: {ts_str}")
-                                        else:
-                                            ts_str = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
-                                            self._log(f"   [TS] Kolom timestamp tidak ada/kosong — pakai waktu sekarang: {ts_str}")
+                                            if ts_raw is not None and not pd.isna(ts_raw):
+                                                ts_str = self._format_timestamp(ts_raw)
+                                                self._log(f"   [TS] Menggunakan timestamp dari Excel: {ts_str}")
+                                            else:
+                                                ts_str = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+                                                self._log(f"   [TS] Kolom timestamp tidak ada/kosong — pakai waktu sekarang: {ts_str}")
 
-                                        self._patch_timestamp(sheet, ts_str, row_before_submit)
+                                            self._patch_timestamp(sheet, ts_str, row_before_submit)
+                                    else:
+                                        # Jika setelah 15 detik tetap tidak terdeteksi halaman konfirmasi
+                                        raise SkipRespondentException("Gagal mendeteksi halaman konfirmasi pengiriman Google Form (timeout)")
 
                                     break
                                 else: # Next button
-                                    driver.execute_script("arguments[0].scrollIntoView();", nav_btn)
-                                    time.sleep(0.3)
-                                    driver.execute_script("arguments[0].click();", nav_btn)
+                                    old_question = questions[0] if questions else None
+                                    self._click_element(driver, nav_btn)
                                     halaman_ke += 1
                                     self._log(f"   -> Pindah ke Halaman {halaman_ke}")
+                                    
+                                    # Tunggu transisi halaman selesai (pertanyaan lama menghilang)
+                                    if old_question:
+                                        try:
+                                            WebDriverWait(driver, 5).until(EC.staleness_of(old_question))
+                                        except TimeoutException:
+                                            pass
+                                    
+                                    # Tunggu halaman baru selesai terload (100%)
+                                    try:
+                                        WebDriverWait(driver, 10).until(
+                                            lambda d: d.execute_script("return document.readyState") == "complete"
+                                        )
+                                    except TimeoutException:
+                                        pass
+                                        
                                     continue
                                     
                             except TimeoutException:

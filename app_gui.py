@@ -97,22 +97,18 @@ class AutoFormApp(ctk.CTk):
         self._safe_after(100, self._init_driver_background)
 
     def _init_driver_background(self):
-        """Memvalidasi dan mengunduh ChromeDriver di latar belakang agar tidak mengganggu UI."""
-        def download_driver():
+        """Menyiapkan ChromeDriver di latar belakang secara otomatis via Selenium Manager."""
+        def check_driver():
             try:
-                self._safe_after(0, lambda: self.log_gui("[System] Memvalidasi/Mengunduh ChromeDriver di latar belakang..."))
-                path = ChromeDriverManager().install()
-                self.cached_driver_path = path
-                self._safe_after(0, lambda: self.log_gui(f"[System] ChromeDriver siap: {path}\n"))
-                # Aktifkan tombol START setelah driver siap
+                self._safe_after(0, lambda: self.log_gui("[System] Menggunakan Selenium Manager bawaan (Chrome 115+ / Selenium 4.6+)..."))
+                self.cached_driver_path = None
+                self._safe_after(0, lambda: self.log_gui("[System] ChromeDriver siap (dikelola otomatis oleh Selenium Manager)\n"))
                 self._safe_after(0, lambda: self.btn_start.configure(state="normal", text="START"))
             except Exception as e:
-                self._safe_after(0, lambda: self.log_gui(f"[System] [!] Gagal mempersiapkan ChromeDriver: {e}\n"))
-                # Tetap aktifkan (atau Anda bisa biarkan disabled jika ini fatal error)
-                # Di sini kita aktifkan saja agar user bisa mencoba fallback dari orchestrator
+                self._safe_after(0, lambda: self.log_gui(f"[System] [!] Gagal: {e}\n"))
                 self._safe_after(0, lambda: self.btn_start.configure(state="normal", text="START"))
         
-        t = threading.Thread(target=download_driver, daemon=True)
+        t = threading.Thread(target=check_driver, daemon=True)
         t.start()
 
     def _init_left_panel(self):
@@ -269,18 +265,14 @@ class AutoFormApp(ctk.CTk):
             self.worker_terminals[worker_id] = txt
 
     def browse_file(self):
-        self.attributes('-topmost', False)
         filename = filedialog.askopenfilename(filetypes=[("Excel Files", "*.xlsx *.xls")])
-        self.attributes('-topmost', True)
         if filename:
             self.file_path_var.set(filename)
             self.log_gui(f"File dipilih: {os.path.basename(filename)}")
 
     def browse_creds(self):
         """File browser untuk memilih Service Account JSON."""
-        self.attributes('-topmost', False)
         filename = filedialog.askopenfilename(filetypes=[("JSON Files", "*.json")])
-        self.attributes('-topmost', True)
         if filename:
             self.creds_path_var.set(filename)
             self.log_gui(f"[TS] Service Account: {os.path.basename(filename)}")
@@ -595,15 +587,9 @@ class AutoFormApp(ctk.CTk):
             # Merombak UI dengan mengirimkan daftar rentang baris (bukan sekadar angka jumlah worker)
             self._safe_after(0, self.setup_worker_terminals, worker_ranges)
             
-            # Download & Cache driver 1 kali sebelum worker berjalan agar tidak tabrakan
-            if self.cached_driver_path:
-                driver_path = self.cached_driver_path
-                self._safe_after(0, lambda msg=f"Menggunakan ChromeDriver dari cache: {driver_path}": self.log_gui(msg))
-            else:
-                self._safe_after(0, lambda: self.log_gui("Mempersiapkan ChromeDriver..."))
-                driver_path = ChromeDriverManager().install()
-                self.cached_driver_path = driver_path
-                self._safe_after(0, lambda msg=f"ChromeDriver siap: {driver_path}": self.log_gui(msg))
+            # driver_path diset ke None agar Selenium Manager yang mengelola secara native
+            driver_path = None
+            self._safe_after(0, lambda: self.log_gui("[System] Browser siap dijalankan via Selenium Manager."))
             
             self._safe_after(0, lambda: self.log_gui(f"Waktu Mulai: {self.start_time_str}\n----------------------------------"))
             

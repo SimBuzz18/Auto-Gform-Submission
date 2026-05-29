@@ -2,6 +2,18 @@
 
 Semua perubahan signifikan pada proyek **AutoForm Pro** akan dicatat di file ini.
 
+## [1.4.1] - 2026-05-29
+
+### Fixed
+
+- **Page Load Sync**: Menambahkan mekanisme penantian dinamis `document.readyState == 'complete'` dan deteksi *staleness* pada transisi halaman untuk memastikan browser 100% terload sebelum worker mengisi form.
+- **Dynamic Stabilization Loop**: Menambahkan pemantauan dinamis terhadap jumlah elemen pertanyaan pada halaman untuk mencegah data ter-skip akibat render JavaScript/React yang lambat.
+- **Form Submission Verification**: Menambahkan verifikasi halaman konfirmasi pasca-pengiriman (menunggu hingga 15 detik untuk memvalidasi teks sukses dan menghilangnya pertanyaan dari DOM) guna mencegah penutupan browser prematur yang menyebabkan submit palsu.
+- **Hybrid Click Helper (`_click_element`)**: Menerapkan metode klik hibrida (native click dengan fallback ke JavaScript click setelah memposisikan elemen di tengah layar) di seluruh komponen form untuk menjamin event click terdaftar di React handler.
+- **Explicit Headless Resolution**: Menambahkan konfigurasi `--window-size=1920,1080` untuk memastikan tata letak halaman termuat utuh dalam mode headless pararel.
+- **Removed Topmost Window Lock**: Menghapus `app.attributes('-topmost', True)` pada `ui.py` dan `app_gui.py` agar aplikasi form automation tidak menutupi jendela aplikasi aktif lainnya di Windows taskbar.
+- **Selenium Manager Integration**: Menggantikan `webdriver_manager` (yang sering kali hang di latar belakang dengan status 'Menyiapkan...') dengan Selenium Manager bawaan Selenium 4.6+, sehingga tombol START langsung aktif seketika saat aplikasi dibuka.
+
 ## [1.4.0] - 2026-05-29
 
 ### Added
