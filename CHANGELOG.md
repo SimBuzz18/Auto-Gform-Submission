@@ -2,6 +2,42 @@
 
 Semua perubahan signifikan pada proyek **AutoForm Pro** akan dicatat di file ini.
 
+## [1.4.0] - 2026-05-29
+
+### Added
+
+- **Process Tree Kill (Stop Button)**: Menekan tombol "STOP" sekarang mematikan **seluruh process tree** secara paksa — termasuk `chromedriver` dan browser Chrome yang di-spawn oleh Selenium — menggunakan `psutil`. Sebelumnya hanya Python worker yang di-terminate, menyebabkan browser Chrome tetap berjalan sebagai orphan process.
+- **PID Registry via Queue**: Worker mendaftarkan PID `chromedriver`-nya ke GUI melalui sinyal internal `[PID_REGISTER]` segera setelah browser berhasil dibuka. GUI menyimpan PID ini untuk digunakan saat kill diperlukan.
+- **Dropdown Handler**: Pendeteksian dan pengisian dropdown Google Form (custom `div[role='listbox']`). Mekanisme: klik trigger → tunggu popup muncul via `WebDriverWait` → klik opsi yang cocok → fallback Escape jika opsi tidak ditemukan.
+- **Multiple Choice Grid Handler (Kisi-kisi Pilihan Ganda)**: Deteksi otomatis berdasarkan keberadaan `> 1` elemen `div[role='radiogroup']` di dalam satu pertanyaan. Format Excel: `NamaBaris1:JawabanKolom;NamaBaris2:JawabanKolom`.
+- **Checkbox Grid Handler (Petak Kotak Centang)**: Deteksi via heuristik sampling `aria-label` (format `"NamaBaris, NamaKolom"`). Format Excel: `Baris1:Kolom1|Kolom2;Baris2:Kolom3`.
+- **Date Handler (Tanggal)**: Pengisian otomatis input tanggal Google Form (3 field terpisah: Day/Month/Year). Mendukung format Excel: `DD/MM/YYYY`, `YYYY-MM-DD`, `DD-MM-YYYY`, dan objek `datetime` pandas.
+- **Time Handler (Waktu)**: Pengisian otomatis input waktu (field Hour/Minute terpisah). Format Excel: `HH:MM`.
+- **Linear Scale & Rating**: Ditangani oleh Radio Button handler (Section C) — tipe ini menggunakan elemen `div[role='radio']` dengan `data-value` numerik. Tidak memerlukan handler terpisah.
+- **Timestamp Synchronization (Google Sheets API)**: Fitur opsional untuk menyinkronkan timestamp respons di Google Sheets dengan timestamp dari data Excel organik. Mekanisme: setelah form berhasil disubmit, Sheets API memperbarui cell kolom A (Timestamp) di baris terakhir menggunakan nilai dari kolom timestamp Excel. Jika kolom timestamp tidak ada atau kosong, menggunakan waktu sekarang sebagai fallback.
+- **Service Account Integration**: Autentikasi ke Google Sheets menggunakan Service Account JSON (`google-auth`). Koneksi `gspread` dibuat sekali per worker (lazy-init, reused).
+- **Timestamp Column Auto-detection**: Deteksi otomatis nama kolom timestamp di Excel (alias yang dikenali: `Timestamp`, `Stempel waktu`, `Waktu`, `Waktu Submit`, `Tanggal Submit`, `Tanggal`, `Time`, `Submit Time`, `Submit At`).
+- **Timestamp Sync UI Section**: Bagian baru di panel kiri GUI — checkbox aktifkan fitur, input Spreadsheet ID, dan file browser untuk Service Account JSON.
+
+### Changed
+
+- **Input Handler Order Refactor**: Urutan deteksi tipe input diubah secara fundamental. Grid handler (MCQ Grid & Checkbox Grid) **wajib** diperiksa sebelum Radio/Checkbox biasa karena keduanya mengandung elemen yang sama (`div[role='radio']` / `div[role='checkbox']`). Urutan baru: `A. MCQ Grid → B. Checkbox Grid → C. Radio → D. Dropdown → E. Date → F. Time → G. Text`.
+- **`worker_launcher` Signature**: Menambahkan parameter `spreadsheet_id` dan `creds_path` (keduanya opsional, default `None`).
+- **`logic.__init__` Signature**: Menambahkan parameter `spreadsheet_id`, `creds_path`, dan instance var `_gsheet` (lazy singleton).
+
+### Fixed
+
+- **Stale Element in Dropdown**: Menambahkan `StaleElementReferenceException` handler saat iterasi opsi dropdown yang bisa berubah saat popup terbuka.
+- **Log Listener Guard**: Menambahkan `except Exception: pass` sebagai guard umum di `log_listener` agar thread tidak mati diam-diam akibat error tak terduga.
+
+### Dependencies Added
+
+- `psutil` — process tree kill
+- `gspread` — Google Sheets API client
+- `google-auth` — autentikasi Service Account Google
+
+---
+
 ## [1.2.9] - 2026-02-25
 
 ### Added

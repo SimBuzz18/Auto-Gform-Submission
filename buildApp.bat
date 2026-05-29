@@ -32,16 +32,17 @@ if exist "%VENV_GLOBAL%\Scripts\activate.bat" (
 echo [3/4] Cleaning previous builds...
 if exist build rmdir /s /q build
 if exist dist rmdir /s /q dist
-if exist AutoForm.spec del /q AutoForm.spec
+if exist AutoFormPro.spec del /q AutoFormPro.spec
 
 echo [4/4] Generating Executable (PyInstaller)...
 echo --onedir: Directory output (not single EXE)
 echo --noconsole: Hide terminal
 echo --collect-all customtkinter: Include CTK assets
-echo --icon: Use icon.png
+echo --icon: Use icon.ico
 
 python -m PyInstaller --noconsole --onedir --clean --noconfirm ^
     --collect-all customtkinter ^
+    --collect-all selenium ^
     --icon="icon.ico" ^
     --name "AutoFormPro" ^
     ui.py

@@ -5,3 +5,6 @@ customtkinter
 openpyxl
 pyinstaller
 Pillow
+psutil
+gspread
+google-auth
